@@ -1,0 +1,14 @@
+//profile folder
+import Navbar from "../_components/Navbar";
+import UserProfile from "../_components/UserProfile";
+
+export default function ProfilePage() {
+  return (
+    <>
+      <Navbar />
+      <main className="min-h-screen flex flex-col items-center justify-center">
+        <UserProfile />
+      </main>
+    </>
+  );
+}
