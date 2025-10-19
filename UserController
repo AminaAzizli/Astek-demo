@@ -1,0 +1,66 @@
+package com.Astek.ResearcHub.Controllers;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
+
+import com.Astek.ResearcHub.Entities.User;
+import com.Astek.ResearcHub.Services.UserService;
+
+import java.util.List;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PutMapping;
+
+
+
+
+@RestController
+@RequestMapping("/api")
+@CrossOrigin(origins = "http://localhost:3000") // allow Next.js frontend
+public class UserController {
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping("/users")
+    public List<User> getUsers(@RequestParam User param) {
+        return userService.getAllUsers();
+    }
+
+    @GetMapping("/user/{id}")
+    public User getUserById(@PathVariable Long id) {
+        return userService.getUser(id);
+    }
+
+    @PostMapping("/create-user")
+    public User createUser(@RequestBody User user) {
+        return userService.createUser(user);
+    }
+
+    @PutMapping("/update-user/{id}")
+    public User updateUser(@PathVariable Long id, @RequestBody User user) {
+        return userService.updateUser(id, user);
+    }
+
+    @DeleteMapping("/delete-user/{id}")
+    public User deleteUser(@PathVariable Long id) {
+        return userService.deleteUser(id);
+    }
+
+    @PostMapping("/login")
+    public User login(@RequestBody User loginRequest) {
+        User user = userService.loginUser(loginRequest.getEmail(), loginRequest.getPassword());
+        if (user == null) {
+            throw new RuntimeException("Invalid email or password");
+        }
+        return user;
+    }
+}
