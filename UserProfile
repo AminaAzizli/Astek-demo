@@ -1,0 +1,127 @@
+"use client";
+import { useState, useEffect } from "react";
+
+
+export default function UserProfile() {
+  const [user, setUser] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", password: "" });
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      const u = JSON.parse(stored);
+      // Split name into first/last if possible
+      let firstName = "", lastName = "";
+      if (u.name) {
+        const parts = u.name.split(" ");
+        firstName = parts[0] || "";
+        lastName = parts.slice(1).join(" ") || "";
+      }
+      setUser(u);
+      setFormData({
+        firstName,
+        lastName,
+        email: u.email || "",
+        password: u.password || ""
+      });
+    }
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setMessage("");
+  };
+
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+    try {
+      const payload = {
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        password: formData.password
+      };
+      const res = await fetch(`http://localhost:8080/api/update-user/${user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const updated = await res.json();
+      setUser(updated);
+      localStorage.setItem("user", JSON.stringify(updated));
+      setEditMode(false);
+      setMessage("Profile updated successfully!");
+    } catch (err) {
+      setMessage(err.message);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete your account?")) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/delete-user/${user.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(await res.text());
+      localStorage.removeItem("user");
+      window.location.href = "/signup";
+    } catch (err) {
+      setMessage(err.message);
+    }
+  };
+
+  if (!user) return <div className="text-black">Loading user...</div>;
+
+  return (
+    <div className="w-full max-w-2xl mx-auto p-8 bg-white rounded-lg shadow border border-gray-200">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-black">My Profile</h2>
+          <p className="text-gray-700">Update your account information</p>
+        </div>
+        {!editMode && (
+          <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={() => setEditMode(true)}>
+            Edit
+          </button>
+        )}
+      </div>
+      {message && <div className="mb-4 text-center text-red-600">{message}</div>}
+      <form onSubmit={handleEdit} className="space-y-6">
+        <div className="grid grid-cols-2 gap-6 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">First Name</label>
+            <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} disabled={!editMode} className="w-full border border-gray-300 rounded p-2 text-black bg-white" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Last Name</label>
+            <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} disabled={!editMode} className="w-full border border-gray-300 rounded p-2 text-black bg-white" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-6 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Email Address</label>
+            <input type="email" name="email" value={formData.email} onChange={handleInputChange} disabled={!editMode} className="w-full border border-gray-300 rounded p-2 text-black bg-white" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Password</label>
+            <input type="password" name="password" value={formData.password} onChange={handleInputChange} disabled={!editMode} className="w-full border border-gray-300 rounded p-2 text-black bg-white" />
+          </div>
+        </div>
+        {editMode && (
+          <div className="flex gap-4 mt-6">
+            <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded">Save Changes</button>
+            <button type="button" className="bg-gray-300 text-black px-6 py-2 rounded" onClick={() => setEditMode(false)}>Cancel</button>
+            <button type="button" className="bg-red-600 text-white px-6 py-2 rounded ml-auto" onClick={handleDelete}>Delete Account</button>
+          </div>
+        )}
+        {!editMode && (
+          <div className="flex justify-end mt-6">
+            <button type="button" className="bg-red-600 text-white px-6 py-2 rounded" onClick={handleDelete}>Delete Account</button>
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
